@@ -650,7 +650,7 @@ class BraintreeBlueTest < Test::Unit::TestCase
       with(has_entries(three_d_secure_pass_thru: has_entries(
         cavv: 'cavv',
         eci_flag: 'eci',
-        xid: 'xid',
+        xid: 'xid'
       ))).
       returns(braintree_result)
 

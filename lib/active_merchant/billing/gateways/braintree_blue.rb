@@ -659,7 +659,7 @@ module ActiveMerchant #:nodoc:
       end
 
       def xid_or_ds_trans_id(three_d_secure_opts)
-        if three_d_secure_opts[:vesion] =~ /^2/
+        if three_d_secure_opts[:version] =~ /^2/
           {
             ds_transaction_id: three_d_secure_opts[:ds_transaction_id],
           }
