@@ -285,10 +285,11 @@ module ActiveMerchant #:nodoc:
 
       def add_auth_purchase_params(xml, options)
         xml.ssl_dynamic_dba                     options[:dba] if options.has_key?(:dba)
-        xml.ssl_merchant_initiated_unscheduled  options[:merchant_initiated_unscheduled] if options.has_key?(:merchant_initiated_unscheduled)
+        xml.ssl_merchant_initiated_unscheduled  merchant_initiated_unscheduled(options) if merchant_initiated_unscheduled(options)
         xml.ssl_customer_code                   options[:customer] if options.has_key?(:customer)
         xml.ssl_customer_number                 options[:customer_number] if options.has_key?(:customer_number)
         add_custom_fields(xml, options) if options[:custom_fields]
+        add_stored_credential(xml, options) if options[:stored_credential]
       end
 
       def add_custom_fields(xml, options)
@@ -337,6 +338,27 @@ module ActiveMerchant #:nodoc:
         }
       end
 
+      def add_stored_credential(xml, options)
+        network_transaction_id = options.dig(:stored_credential, :network_transaction_id)
+        case
+        when network_transaction_id.nil?
+          return
+        when network_transaction_id.to_s.include?('|')
+          oar_data, ps2000_data = options[:stored_credential][:network_transaction_id].split('|')
+          xml.ssl_oar_data oar_data unless oar_data.nil? || oar_data.empty?
+          xml.ssl_ps2000_data ps2000_data unless ps2000_data.nil? || ps2000_data.empty?
+        when network_transaction_id.to_s.length > 22
+          xml.ssl_oar_data options.dig(:stored_credential, :network_transaction_id)
+        else
+          xml.ssl_ps2000_data options.dig(:stored_credential, :network_transaction_id)
+        end
+      end
+
+      def merchant_initiated_unscheduled(options)
+        return options[:merchant_initiated_unscheduled] if options[:merchant_initiated_unscheduled]
+        return 'Y' if options.dig(:stored_credential, :initiator) == 'merchant' && options.dig(:stored_credential, :reason_type) == 'unscheduled'
+      end
+
       def build_xml_request
         builder = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
           xml.txn do
@@ -362,7 +384,8 @@ module ActiveMerchant #:nodoc:
           authorization: authorization_from(response),
           error_code: response[:errorCode],
           avs_result: { code: response[:avs_response] },
-          cvv_result: response[:cvv2_response]
+          cvv_result: response[:cvv2_response],
+          network_transaction_id: "#{response[:oar_data]}|#{response[:ps2000_data]}"
         )
       end
 
