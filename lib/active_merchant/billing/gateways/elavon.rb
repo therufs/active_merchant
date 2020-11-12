@@ -385,8 +385,12 @@ module ActiveMerchant #:nodoc:
           error_code: response[:errorCode],
           avs_result: { code: response[:avs_response] },
           cvv_result: response[:cvv2_response],
-          network_transaction_id: "#{response[:oar_data]}|#{response[:ps2000_data]}"
+          network_transaction_id: build_network_transaction_id(response)
         )
+      end
+
+      def build_network_transaction_id(response)
+        "#{response[:oar_data]}|#{response[:ps2000_data]}"
       end
 
       def headers
